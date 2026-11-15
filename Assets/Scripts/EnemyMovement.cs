@@ -27,6 +27,8 @@ public class EnemyMovement : MonoBehaviour
 
     private Transform currentTarget;
     private PlayerMovement player;
+    private Rigidbody2D body;
+    private float movementSpeedMultiplier = 1f;
     private bool circularPatrol;
     private Vector2 circularCenter;
     private float circularRadius;
@@ -85,6 +87,11 @@ public class EnemyMovement : MonoBehaviour
         currentTarget = pointB;
     }
 
+    public void SetMovementSpeedMultiplier(float multiplier)
+    {
+        movementSpeedMultiplier = multiplier;
+    }
+
     public void SetCircularPatrol(Vector2 center, float radius, float startAngleDegrees)
     {
         if (radius <= 0f)
@@ -102,6 +109,7 @@ public class EnemyMovement : MonoBehaviour
 
     private void Start()
     {
+        body = GetComponent<Rigidbody2D>();
         player = UnityEngine.Object.FindAnyObjectByType<PlayerMovement>();
 
         // Start by moving toward point B (or A if B is missing).
@@ -115,7 +123,7 @@ public class EnemyMovement : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
         {
@@ -124,18 +132,16 @@ public class EnemyMovement : MonoBehaviour
 
         if (!circularPatrol && GameManager.Instance != null && GameManager.Instance.HasKey && player != null)
         {
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                player.transform.position,
-                chaseSpeed * Time.deltaTime);
+            MoveTowards(player.transform.position, chaseSpeed * movementSpeedMultiplier);
             return;
         }
 
         if (circularPatrol)
         {
             circularAngle = Mathf.Repeat(
-                circularAngle + Mathf.Rad2Deg * Mathf.Max(moveSpeed, MinimumPatrolSpeed) /
-                circularRadius * Time.deltaTime,
+                circularAngle + Mathf.Rad2Deg * Mathf.Max(moveSpeed, MinimumPatrolSpeed) *
+                movementSpeedMultiplier /
+                circularRadius * Time.fixedDeltaTime,
                 360f);
             SetPositionOnCircle();
             return;
@@ -147,10 +153,8 @@ public class EnemyMovement : MonoBehaviour
         }
 
         // Move toward the current target.
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            currentTarget.position,
-            Mathf.Max(moveSpeed, MinimumPatrolSpeed) * Time.deltaTime);
+        MoveTowards(currentTarget.position,
+            Mathf.Max(moveSpeed, MinimumPatrolSpeed) * movementSpeedMultiplier);
 
         // Reverse when close enough to the target.
         if (Vector3.Distance(transform.position, currentTarget.position) <= arriveDistance)
@@ -162,10 +166,32 @@ public class EnemyMovement : MonoBehaviour
     private void SetPositionOnCircle()
     {
         float angleRadians = circularAngle * Mathf.Deg2Rad;
-        transform.position = new Vector3(
+        Vector3 position = new Vector3(
             circularCenter.x + Mathf.Cos(angleRadians) * circularRadius,
             circularCenter.y + Mathf.Sin(angleRadians) * circularRadius,
             transform.position.z);
+        if (body != null)
+        {
+            body.MovePosition(position);
+        }
+        else
+        {
+            transform.position = position;
+        }
+    }
+
+    private void MoveTowards(Vector3 target, float speed)
+    {
+        Vector3 position = Vector3.MoveTowards(
+            transform.position, target, speed * Time.fixedDeltaTime);
+        if (body != null)
+        {
+            body.MovePosition(position);
+        }
+        else
+        {
+            transform.position = position;
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

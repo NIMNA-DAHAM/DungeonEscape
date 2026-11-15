@@ -38,10 +38,21 @@ public static class DungeonObjectRandomizer
             return;
         }
 
+        if (!ConfigureMazeWalls(walls, level))
+        {
+            return;
+        }
+
         Collider2D[] wallColliders = walls.GetComponentsInChildren<Collider2D>();
         if (wallColliders.Length == 0)
         {
             Debug.LogError("[DungeonEscape] Random placement requires colliders on the boundary walls.");
+            return;
+        }
+
+        if (level == 5)
+        {
+            RandomizeMazePositions(players[0], keys, exits[0], enemies, extraLives);
             return;
         }
 
@@ -201,6 +212,116 @@ public static class DungeonObjectRandomizer
         }
 
         Physics2D.SyncTransforms();
+    }
+
+    private static bool ConfigureMazeWalls(GameObject walls, int level)
+    {
+        Transform maze = walls.transform.Find("MazeWalls");
+        if (maze == null && level == 5)
+        {
+            Transform template = walls.transform.Find("WallTop");
+            if (template == null)
+            {
+                Debug.LogError("[DungeonEscape] Level 5 requires a WallTop object to create its maze walls.");
+                return false;
+            }
+
+            GameObject mazeObject = new GameObject("MazeWalls");
+            mazeObject.transform.SetParent(walls.transform, false);
+            maze = mazeObject.transform;
+
+            CreateMazeWall(template, maze, "MazeWestLower", new Vector2(-3f, -3f), new Vector2(0.35f, 3.5f));
+            CreateMazeWall(template, maze, "MazeWestUpper", new Vector2(-3f, 2.875f), new Vector2(0.35f, 3.75f));
+            CreateMazeWall(template, maze, "MazeCenterLower", new Vector2(0f, -1.875f), new Vector2(0.35f, 5.75f));
+            CreateMazeWall(template, maze, "MazeCenterUpper", new Vector2(0f, 3.875f), new Vector2(0.35f, 1.75f));
+            CreateMazeWall(template, maze, "MazeEastLower", new Vector2(3f, -3.375f), new Vector2(0.35f, 2.75f));
+            CreateMazeWall(template, maze, "MazeEastUpper", new Vector2(3f, 2.375f), new Vector2(0.35f, 4.75f));
+            CreateMazeWall(template, maze, "MazeCrossbarWest", new Vector2(-0.5f, -2f), new Vector2(1f, 0.35f));
+            CreateMazeWall(template, maze, "MazeCrossbarEast", new Vector2(0.5f, -2f), new Vector2(1f, 0.35f));
+        }
+
+        if (maze != null)
+        {
+            maze.gameObject.SetActive(level == 5);
+        }
+
+        return true;
+    }
+
+    private static void CreateMazeWall(Transform template, Transform parent, string wallName,
+        Vector2 position, Vector2 size)
+    {
+        GameObject wall = UnityEngine.Object.Instantiate(template.gameObject, parent);
+        wall.name = wallName;
+        wall.transform.position = new Vector3(position.x, position.y, template.position.z);
+        wall.transform.localScale = new Vector3(size.x, size.y, template.localScale.z);
+    }
+
+    private static void RandomizeMazePositions(PlayerMovement player, KeyCollect[] keys,
+        ExitDoor exit, EnemyMovement[] enemies, ExtraLifePickup[] extraLives)
+    {
+        CoinCollect[] coins = UnityEngine.Object.FindObjectsByType<CoinCollect>();
+        TreasureChestCollect[] chests = UnityEngine.Object.FindObjectsByType<TreasureChestCollect>();
+        TimePickup[] timePickups = UnityEngine.Object.FindObjectsByType<TimePickup>();
+        Array.Sort(coins, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(chests, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(timePickups, (first, second) => string.CompareOrdinal(first.name, second.name));
+
+        Vector2Int[] bonusPositions =
+        {
+            new Vector2Int(-5, 2),
+            new Vector2Int(-5, 0),
+            new Vector2Int(-5, -2),
+            new Vector2Int(-2, -3),
+            new Vector2Int(1, -3),
+            new Vector2Int(-2, 3),
+            new Vector2Int(2, 1),
+            new Vector2Int(5, 2)
+        };
+        int bonusCount = coins.Length + chests.Length + timePickups.Length + extraLives.Length;
+        if (keys.Length < 2 || enemies.Length < 2 || extraLives.Length == 0 ||
+            bonusCount > bonusPositions.Length)
+        {
+            Debug.LogError("[DungeonEscape] Level 5 requires two keys, two enemies, a health pickup, and no more than eight bonus objects.");
+            return;
+        }
+
+        player.SetSpawnPosition(new Vector2(-5f, -4f));
+        SetPosition(keys[0].transform, new Vector2Int(-1, 0));
+        SetPosition(keys[1].transform, new Vector2Int(2, 3));
+        SetPosition(exit.transform, new Vector2Int(5, -4));
+        enemies[0].SetPatrolPositions(new Vector2(-4f, -3f), new Vector2(-4f, 4f));
+        enemies[1].SetPatrolPositions(new Vector2(4f, 4f), new Vector2(4f, -3f));
+        foreach (EnemyMovement enemy in enemies)
+        {
+            enemy.SetMovementSpeedMultiplier(0.9f);
+            Rigidbody2D body = enemy.GetComponent<Rigidbody2D>();
+            if (body != null)
+            {
+                body.bodyType = RigidbodyType2D.Dynamic;
+                body.gravityScale = 0f;
+                body.constraints |= RigidbodyConstraints2D.FreezeRotation;
+                body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                body.linearVelocity = Vector2.zero;
+            }
+        }
+
+        int bonusIndex = 0;
+        PlaceBonusObjects(coins, bonusPositions, ref bonusIndex);
+        PlaceBonusObjects(chests, bonusPositions, ref bonusIndex);
+        PlaceBonusObjects(timePickups, bonusPositions, ref bonusIndex);
+        PlaceBonusObjects(extraLives, bonusPositions, ref bonusIndex, 1);
+        Physics2D.SyncTransforms();
+    }
+
+    private static void PlaceBonusObjects<T>(T[] objects, Vector2Int[] positions, ref int index,
+        int count = int.MaxValue) where T : Component
+    {
+        int placed = Mathf.Min(objects.Length, count);
+        for (int i = 0; i < placed; i++)
+        {
+            SetPosition(objects[i].transform, positions[index++]);
+        }
     }
 
     private static bool TryChooseObjectivePositions(List<Vector2Int> positions, System.Random random,

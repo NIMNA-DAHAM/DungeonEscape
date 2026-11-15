@@ -9,7 +9,7 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     private const int MaxLives = 10;
-    private const int MaxLevel = 4;
+    private const int MaxLevel = 5;
 
     public static GameManager Instance { get; private set; }
 
@@ -28,7 +28,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
 
     [Header("Beginner Settings")]
-    [SerializeField, Min(1)] private int startingLives = 3;
+    [SerializeField, Min(1)] private int startingLives = 5;
     [SerializeField, Min(1f)] private float timeLimit = 60f;
     [SerializeField, Min(0.1f)] private float hitProtectionSeconds = 1.5f;
 
@@ -101,7 +101,8 @@ public class GameManager : MonoBehaviour
         ShowMessage(currentLevel == 1 ? startMessage :
             currentLevel == 2 ? "LEVEL 2 - Two enemies guard the exit!" :
             currentLevel == 3 ? "LEVEL 3 - Find both keys while an enemy circles the dungeon!" :
-            "LEVEL 4 - Cross the enemy routes, find both keys, and claim the extra heart!");
+            currentLevel == 4 ? "LEVEL 4 - Cross the enemy routes, find both keys, and claim the extra heart!" :
+            "LEVEL 5 - Find both keys in the maze and escape the patrolling enemies!");
         CreateLevelSelector();
         SetEndScreenButtonLabel("Restart");
 
@@ -257,9 +258,9 @@ public class GameManager : MonoBehaviour
         EndGame();
         levelCompleted = true;
         bool hasNextLevel = currentLevel < MaxLevel;
-        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All four levels complete!");
+        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All five levels complete!");
         SetEndScreenButtonLabel(hasNextLevel ? "Next Level" : "Play Again");
-        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL FOUR LEVELS COMPLETE!");
+        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL FIVE LEVELS COMPLETE!");
 
         if (UiAnimator.Instance != null)
         {
@@ -310,7 +311,7 @@ public class GameManager : MonoBehaviour
         if (levelCompleted && currentLevel < MaxLevel)
         {
             carriedScore = score;
-            carriedLives = lives;
+            carriedLives = startingLives;
             continueSession = true;
             currentLevel++;
         }
@@ -361,11 +362,11 @@ public class GameManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(1f, 0.5f);
         panelRect.pivot = new Vector2(1f, 0.5f);
         panelRect.anchoredPosition = new Vector2(-16f, 0f);
-        panelRect.sizeDelta = new Vector2(210f, 360f);
+        panelRect.sizeDelta = new Vector2(210f, 400f);
         panelObject.GetComponent<Image>().color = new Color(0.06f, 0.08f, 0.12f, 0.9f);
 
         TMP_FontAsset font = scoreText != null ? scoreText.font : TMP_Settings.defaultFontAsset;
-        CreateLevelSelectorLabel(panelRect, "Title", "SELECT LEVEL", 20f, 145f, font);
+        CreateLevelSelectorLabel(panelRect, "Title", "SELECT LEVEL", 20f, 165f, font);
 
         for (int i = 0; i < MaxLevel; i++)
         {
@@ -379,7 +380,7 @@ public class GameManager : MonoBehaviour
             buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
             buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
             buttonRect.pivot = new Vector2(0.5f, 0.5f);
-            buttonRect.anchoredPosition = new Vector2(0f, 85f - i * 65f);
+            buttonRect.anchoredPosition = new Vector2(0f, 80f - i * 58f);
             buttonRect.sizeDelta = new Vector2(174f, 50f);
 
             Image buttonImage = buttonObject.GetComponent<Image>();

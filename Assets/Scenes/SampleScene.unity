@@ -11543,7 +11543,7 @@ MonoBehaviour:
   restartButton: {fileID: 1311620475}
   livesText: {fileID: 1562439481}
   timerText: {fileID: 1721215254}
-  startingLives: 3
+  startingLives: 5
   timeLimit: 60
   hitProtectionSeconds: 1.5
   startMessage: Find the key and escape!
