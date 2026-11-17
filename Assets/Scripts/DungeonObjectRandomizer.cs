@@ -14,7 +14,8 @@ public static class DungeonObjectRandomizer
 
     public static void RandomizePositions(int level)
     {
-        int requiredEnemyCount = level == 2 || (level >= 4 && level <= 5) || level == 7 ? 2 : 1;
+        int requiredEnemyCount = level == 8 ? 3 :
+            (level == 2 || (level >= 4 && level <= 5) || level == 7 ? 2 : 1);
         int requiredKeyCount = level >= 3 ? 2 : 1;
         int requiredExtraLifeCount = level == 3 ? 2 : 1;
         bool bonusLife = level >= 4;
@@ -65,6 +66,12 @@ public static class DungeonObjectRandomizer
         if (level == 7)
         {
             RandomizeLevelSevenPositions(players[0], keys, exits[0], enemies, extraLives);
+            return;
+        }
+
+        if (level == 8)
+        {
+            RandomizeLevelEightPositions(players[0], keys, exits[0], enemies, extraLives);
             return;
         }
 
@@ -298,6 +305,24 @@ public static class DungeonObjectRandomizer
             levelSeven.gameObject.SetActive(level == 7);
         }
 
+        Transform levelEight = walls.transform.Find("LevelEightLayout");
+        if (levelEight == null && level == 8)
+        {
+            Transform template = walls.transform.Find("WallTop");
+            if (template == null)
+            {
+                Debug.LogError("[DungeonEscape] Level 8 requires a WallTop object to create its moving gates.");
+                return false;
+            }
+
+            levelEight = CreateLevelEightLayout(template, walls.transform);
+        }
+
+        if (levelEight != null)
+        {
+            levelEight.gameObject.SetActive(level == 8);
+        }
+
         return true;
     }
 
@@ -367,6 +392,13 @@ public static class DungeonObjectRandomizer
 
     private static void CreateMovingGate(Transform template, Transform parent, string gateName, Vector2 position)
     {
+        CreateMovingGate(template, parent, gateName, position, 2f, 1.5f,
+            position.x < 0f ? 0f : 0.5f);
+    }
+
+    private static void CreateMovingGate(Transform template, Transform parent, string gateName,
+        Vector2 position, float travelDistance, float moveSpeed, float phaseOffset)
+    {
         GameObject gate = new GameObject(gateName);
         gate.transform.SetParent(parent, false);
         gate.transform.position = new Vector3(position.x, position.y, template.position.z);
@@ -386,7 +418,32 @@ public static class DungeonObjectRandomizer
 
         gate.AddComponent<BoxCollider2D>();
         MovingPathBlock movingBlock = gate.AddComponent<MovingPathBlock>();
-        movingBlock.Configure(position, 2f, 1.5f, position.x < 0f ? 0f : 0.5f);
+        movingBlock.Configure(position, travelDistance, moveSpeed, phaseOffset);
+    }
+
+    private static Transform CreateLevelEightLayout(Transform template, Transform parent)
+    {
+        GameObject layoutObject = new GameObject("LevelEightLayout");
+        layoutObject.transform.SetParent(parent, false);
+        Transform layout = layoutObject.transform;
+
+        CreateMazeWall(template, layout, "GateOneWestWall",
+            new Vector2(-2.15f, -3f), new Vector2(7.2f, 0.35f));
+        CreateMazeWall(template, layout, "GateOneEastWall",
+            new Vector2(5.1f, -3f), new Vector2(1.3f, 0.35f));
+        CreateMazeWall(template, layout, "GateTwoWestWall",
+            new Vector2(-5.1f, 0f), new Vector2(1.3f, 0.35f));
+        CreateMazeWall(template, layout, "GateTwoEastWall",
+            new Vector2(2.15f, 0f), new Vector2(7.2f, 0.35f));
+        CreateMazeWall(template, layout, "GateThreeWestWall",
+            new Vector2(-2.15f, 3f), new Vector2(7.2f, 0.35f));
+        CreateMazeWall(template, layout, "GateThreeEastWall",
+            new Vector2(5.1f, 3f), new Vector2(1.3f, 0.35f));
+
+        CreateMovingGate(template, layout, "MovingGateOne", new Vector2(3f, -3f), 1.5f, 0.65f, 0f);
+        CreateMovingGate(template, layout, "MovingGateTwo", new Vector2(-3f, 0f), 1.5f, 0.65f, 1.5f);
+        CreateMovingGate(template, layout, "MovingGateThree", new Vector2(3f, 3f), 1.5f, 0.65f, 3f);
+        return layout;
     }
 
     private static void RandomizeLevelSixPositions(PlayerMovement player, KeyCollect[] keys,
@@ -461,6 +518,59 @@ public static class DungeonObjectRandomizer
             new Vector2Int(-8, -2),
             new Vector2Int(8, 3),
             new Vector2Int(2, -6)
+        };
+        int bonusIndex = 0;
+        PlaceBonusObjects(coins, bonusPositions, ref bonusIndex);
+        PlaceBonusObjects(chests, bonusPositions, ref bonusIndex, 1);
+        PlaceBonusObjects(timePickups, bonusPositions, ref bonusIndex, 1);
+        PlaceBonusObjects(extraLives, bonusPositions, ref bonusIndex, 1);
+
+        Physics2D.SyncTransforms();
+    }
+
+    private static void RandomizeLevelEightPositions(PlayerMovement player, KeyCollect[] keys,
+        ExitDoor exit, EnemyMovement[] enemies, ExtraLifePickup[] extraLives)
+    {
+        CoinCollect[] coins = UnityEngine.Object.FindObjectsByType<CoinCollect>();
+        TreasureChestCollect[] chests = UnityEngine.Object.FindObjectsByType<TreasureChestCollect>();
+        TimePickup[] timePickups = UnityEngine.Object.FindObjectsByType<TimePickup>();
+        Array.Sort(keys, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(coins, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(chests, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(timePickups, (first, second) => string.CompareOrdinal(first.name, second.name));
+
+        if (keys.Length < 2 || enemies.Length < 3 || extraLives.Length < 1 ||
+            coins.Length > 5 || chests.Length > 1 || timePickups.Length > 1)
+        {
+            Debug.LogError("[DungeonEscape] Level 8 requires two keys, three enemies, one extra-life pickup, and at most five coins, one chest, and one time pickup.");
+            return;
+        }
+
+        player.SetSpawnPosition(new Vector2(-4f, -4f));
+        SetPosition(keys[0].transform, new Vector2Int(4, -1));
+        SetPosition(keys[1].transform, new Vector2Int(-5, 4));
+        SetPosition(exit.transform, new Vector2Int(0, 4));
+
+        enemies[0].SetPatrolPositions(new Vector2(5f, -2.2f), new Vector2(5f, -0.7f));
+        enemies[1].SetPatrolPositions(new Vector2(-5f, -2.2f), new Vector2(-5f, -0.7f));
+        enemies[2].SetPatrolPositions(new Vector2(0f, 0.65f), new Vector2(0f, 2.1f));
+        foreach (EnemyMovement enemy in enemies)
+        {
+            enemy.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+            enemy.SetMovementSpeedMultiplier(0.3f);
+            enemy.SetChaseEnabled(false);
+        }
+
+        Vector2Int[] bonusPositions =
+        {
+            new Vector2Int(0, -4),
+            new Vector2Int(4, -4),
+            new Vector2Int(-4, -1),
+            new Vector2Int(0, 1),
+            new Vector2Int(1, 4),
+            new Vector2Int(-4, 1),
+            new Vector2Int(-4, -2),
+            new Vector2Int(4, 1)
         };
         int bonusIndex = 0;
         PlaceBonusObjects(coins, bonusPositions, ref bonusIndex);

@@ -33,6 +33,7 @@ public class EnemyMovement : MonoBehaviour
     private Vector2 circularCenter;
     private float circularRadius;
     private float circularAngle;
+    private bool chasePlayer = true;
 
     public static EnemyMovement CreateAdditionalEnemy(EnemyMovement template, string enemyName)
     {
@@ -92,6 +93,11 @@ public class EnemyMovement : MonoBehaviour
         movementSpeedMultiplier = multiplier;
     }
 
+    public void SetChaseEnabled(bool enabled)
+    {
+        chasePlayer = enabled;
+    }
+
     public void SetCircularPatrol(Vector2 center, float radius, float startAngleDegrees)
     {
         if (radius <= 0f)
@@ -130,7 +136,8 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        if (!circularPatrol && GameManager.Instance != null && GameManager.Instance.HasKey && player != null)
+        if (chasePlayer && !circularPatrol && GameManager.Instance != null &&
+            GameManager.Instance.HasKey && player != null)
         {
             MoveTowards(player.transform.position, chaseSpeed * movementSpeedMultiplier);
             return;

@@ -9,7 +9,7 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     private const int MaxLives = 10;
-    private const int MaxLevel = 7;
+    private const int MaxLevel = 8;
 
     public static GameManager Instance { get; private set; }
 
@@ -109,7 +109,8 @@ public class GameManager : MonoBehaviour
             currentLevel == 4 ? "LEVEL 4 - Cross the enemy routes, find both keys, and claim the extra heart!" :
             currentLevel == 5 ? "LEVEL 5 - Find both keys in the maze and escape the patrolling enemies!" :
             currentLevel == 6 ? "LEVEL 6 - Time your way past two moving gates and the dungeon guard!" :
-            "LEVEL 7 - Explore the expanded maze, collect both keys, and find the exit!");
+            currentLevel == 7 ? "LEVEL 7 - Explore the expanded maze, collect both keys, and find the exit!" :
+            "LEVEL 8 - Time three moving gates while avoiding three slow-moving guards!");
         CreateLevelSelector();
         SetEndScreenButtonLabel("Restart");
 
@@ -265,9 +266,9 @@ public class GameManager : MonoBehaviour
         EndGame();
         levelCompleted = true;
         bool hasNextLevel = currentLevel < MaxLevel;
-        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All seven levels complete!");
+        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All eight levels complete!");
         SetEndScreenButtonLabel(hasNextLevel ? "Next Level" : "Play Again");
-        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL SEVEN LEVELS COMPLETE!");
+        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL EIGHT LEVELS COMPLETE!");
 
         if (UiAnimator.Instance != null)
         {
