@@ -14,7 +14,7 @@ public static class DungeonObjectRandomizer
 
     public static void RandomizePositions(int level)
     {
-        int requiredEnemyCount = level == 2 || (level >= 4 && level <= 5) ? 2 : 1;
+        int requiredEnemyCount = level == 2 || (level >= 4 && level <= 5) || level == 7 ? 2 : 1;
         int requiredKeyCount = level >= 3 ? 2 : 1;
         int requiredExtraLifeCount = level == 3 ? 2 : 1;
         bool bonusLife = level >= 4;
@@ -59,6 +59,12 @@ public static class DungeonObjectRandomizer
         if (level == 6)
         {
             RandomizeLevelSixPositions(players[0], keys, exits[0], enemies, extraLives);
+            return;
+        }
+
+        if (level == 7)
+        {
+            RandomizeLevelSevenPositions(players[0], keys, exits[0], enemies, extraLives);
             return;
         }
 
@@ -269,7 +275,74 @@ public static class DungeonObjectRandomizer
             levelSix.gameObject.SetActive(level == 6);
         }
 
+        Transform levelSeven = walls.transform.Find("LevelSevenLayout");
+        if (level == 7 && !ConfigureLevelSevenBoundary(walls.transform))
+        {
+            return false;
+        }
+
+        if (levelSeven == null && level == 7)
+        {
+            Transform template = walls.transform.Find("WallTop");
+            if (template == null)
+            {
+                Debug.LogError("[DungeonEscape] Level 7 requires a WallTop object to create its expanded maze.");
+                return false;
+            }
+
+            levelSeven = CreateLevelSevenLayout(template, walls.transform);
+        }
+
+        if (levelSeven != null)
+        {
+            levelSeven.gameObject.SetActive(level == 7);
+        }
+
         return true;
+    }
+
+    private static bool ConfigureLevelSevenBoundary(Transform walls)
+    {
+        return SetBoundaryWall(walls, "WallTop", new Vector3(0f, 8f, 0f), new Vector3(20f, 0.5f, 1f)) &&
+               SetBoundaryWall(walls, "WallBottom", new Vector3(0f, -8f, 0f), new Vector3(20f, 0.5f, 1f)) &&
+               SetBoundaryWall(walls, "WallLeft", new Vector3(-10f, 0f, 0f), new Vector3(0.5f, 16f, 1f)) &&
+               SetBoundaryWall(walls, "WallRight", new Vector3(10f, 0f, 0f), new Vector3(0.5f, 16f, 1f));
+    }
+
+    private static bool SetBoundaryWall(Transform walls, string wallName, Vector3 position, Vector3 scale)
+    {
+        Transform wall = walls.Find(wallName);
+        if (wall == null)
+        {
+            Debug.LogError("[DungeonEscape] Level 7 requires the " + wallName + " boundary wall.");
+            return false;
+        }
+
+        wall.position = position;
+        wall.localScale = scale;
+        return true;
+    }
+
+    private static Transform CreateLevelSevenLayout(Transform template, Transform parent)
+    {
+        GameObject layoutObject = new GameObject("LevelSevenLayout");
+        layoutObject.transform.SetParent(parent, false);
+        Transform layout = layoutObject.transform;
+
+        CreateMazeWall(template, layout, "WestBarrierLower",
+            new Vector2(-5f, -5.25f), new Vector2(0.35f, 3.5f));
+        CreateMazeWall(template, layout, "WestBarrierUpper",
+            new Vector2(-5f, 3.25f), new Vector2(0.35f, 7.5f));
+        CreateMazeWall(template, layout, "CenterBarrierLower",
+            new Vector2(0f, -3.25f), new Vector2(0.35f, 7.5f));
+        CreateMazeWall(template, layout, "CenterBarrierUpper",
+            new Vector2(0f, 5.25f), new Vector2(0.35f, 3.5f));
+        CreateMazeWall(template, layout, "EastBarrierLower",
+            new Vector2(5f, -5.25f), new Vector2(0.35f, 3.5f));
+        CreateMazeWall(template, layout, "EastBarrierUpper",
+            new Vector2(5f, 3.25f), new Vector2(0.35f, 7.5f));
+
+        return layout;
     }
 
     private static Transform CreateLevelSixLayout(Transform template, Transform parent)
@@ -349,6 +422,51 @@ public static class DungeonObjectRandomizer
         if (chests.Length > 0) SetPosition(chests[0].transform, new Vector2Int(-5, 2));
         if (timePickups.Length > 0) SetPosition(timePickups[0].transform, new Vector2Int(0, -4));
         SetPosition(extraLives[0].transform, new Vector2Int(0, 4));
+
+        Physics2D.SyncTransforms();
+    }
+
+    private static void RandomizeLevelSevenPositions(PlayerMovement player, KeyCollect[] keys,
+        ExitDoor exit, EnemyMovement[] enemies, ExtraLifePickup[] extraLives)
+    {
+        CoinCollect[] coins = UnityEngine.Object.FindObjectsByType<CoinCollect>();
+        TreasureChestCollect[] chests = UnityEngine.Object.FindObjectsByType<TreasureChestCollect>();
+        TimePickup[] timePickups = UnityEngine.Object.FindObjectsByType<TimePickup>();
+        Array.Sort(keys, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(coins, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(chests, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(timePickups, (first, second) => string.CompareOrdinal(first.name, second.name));
+
+        if (keys.Length < 2 || enemies.Length < 2 || extraLives.Length < 1 ||
+            coins.Length > 5 || chests.Length > 1 || timePickups.Length > 1)
+        {
+            Debug.LogError("[DungeonEscape] Level 7 requires two keys, two enemies, one extra-life pickup, and at most five coins, one chest, and one time pickup.");
+            return;
+        }
+
+        player.SetSpawnPosition(new Vector2(-8f, -5f));
+        SetPosition(keys[0].transform, new Vector2Int(-8, 5));
+        SetPosition(keys[1].transform, new Vector2Int(2, 5));
+        SetPosition(exit.transform, new Vector2Int(8, -5));
+        enemies[0].SetPatrolPositions(new Vector2(-2f, -6f), new Vector2(-2f, -3f));
+        enemies[1].SetPatrolPositions(new Vector2(3f, 4f), new Vector2(3f, 6f));
+
+        Vector2Int[] bonusPositions =
+        {
+            new Vector2Int(-8, 0),
+            new Vector2Int(-2, 0),
+            new Vector2Int(2, 0),
+            new Vector2Int(8, 0),
+            new Vector2Int(2, 6),
+            new Vector2Int(-8, -2),
+            new Vector2Int(8, 3),
+            new Vector2Int(2, -6)
+        };
+        int bonusIndex = 0;
+        PlaceBonusObjects(coins, bonusPositions, ref bonusIndex);
+        PlaceBonusObjects(chests, bonusPositions, ref bonusIndex, 1);
+        PlaceBonusObjects(timePickups, bonusPositions, ref bonusIndex, 1);
+        PlaceBonusObjects(extraLives, bonusPositions, ref bonusIndex, 1);
 
         Physics2D.SyncTransforms();
     }
