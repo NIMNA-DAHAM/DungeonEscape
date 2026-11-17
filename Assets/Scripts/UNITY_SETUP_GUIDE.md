@@ -9,14 +9,16 @@ Health pickups can restore lives up to a maximum of **10**.
 Five small orange diamonds are optional coins worth **5 points each**. The key is
 still worth 10 points and is required to open the exit; coins are optional.
 
-Every new round places the player, keys, and exit at distinct locations, with the
-objectives deliberately separated. In Levels 1 and 2, the enemy patrol crosses
-the route between the key and exit, then chases the player after the key is
-collected. In Level 3, its circular patrol continues throughout the level, and
-two health packs spawn at separate locations.
+Levels 1-4 place the player, keys, and exit at new, separated locations each
+round. Levels 5 and 6 use fixed layouts. In Levels 1 and 2, the enemy patrol
+crosses the route between the key and exit, then chases the player after the key
+is collected. In Level 3, its circular patrol continues throughout the level,
+and two health packs spawn at separate locations.
 Level 4 has two enemies guarding both key routes and a bonus heart near the last
-key's route to the exit. Coins and bonus pickups also move to open locations;
-boundary walls stay fixed. Restart to try another layout.
+key's route to the exit. Level 6 has two timed moving gates and one enemy
+guarding the key chamber. In Levels 1-4, coins and bonus pickups move to open
+locations. Boundary walls stay fixed. Restart to retry the level; Levels 1-4
+use a new layout.
 
 Touching an enemy removes one life. With lives remaining, the player returns to
 the starting position and keeps collected points and the key. A 1.5-second grace
@@ -48,7 +50,22 @@ Level 4 combines the two-key challenge with two enemies: one patrol crosses the
 player-to-key route, while the other guards the key-to-exit route. Collecting the
 first key makes both enemies chase. A bonus heart is placed near the final
 key-to-exit stretch; collecting it restores one life, up to the shared maximum
-of 10. Completing Level 4 offers **Play Again** at Level 1.
+of 10. Completing Level 4 offers **Next Level** to enter Level 5.
+
+### Level 5: Maze Vault
+
+Level 5 adds a fixed maze, two keys, and two patrolling enemies. Find both keys,
+collect bonus items along the route, then return to the exit while avoiding the
+guards. Completing Level 5 offers **Next Level** to enter Level 6.
+
+### Level 6: Moving Gate Gauntlet
+
+Level 6 has two narrow passages guarded by solid gates that move up and down.
+Wait for each gate to move clear; the wider opening gives you time to cross.
+Collect both keys in the guarded upper chamber. One slower enemy patrols near
+the second key and chases after the first key is collected. Return through both
+gates and reach the exit.
+Completing Level 6 offers **Play Again** at Level 1.
 
 Select **GameManager** in the Inspector to change Starting Lives, Time Limit, or
 Hit Protection Seconds. Select a coin to change its Score Value.
@@ -81,7 +98,11 @@ these enhancements.
 - Complete Level 3 and choose Next Level: Level 4 starts with two keys, two enemies, and an extra-life pickup.
 - In Level 4, both enemies chase after the first key; collect the second key to unlock the exit.
 - Collect health packs: gain one life per pack, up to 10 total.
-- Complete Level 4: Play Again starts a new run at Level 1.
+- Complete Level 4 and choose Next Level: Level 5 starts with a maze, two keys, and two enemies.
+- Complete Level 5 and choose Next Level: Level 6 starts with two moving gates, two keys, and one enemy.
+- Level 6 gates move up and down, blocking their narrow passages until they move clear.
+- Collect both Level 6 keys and return through both gates to reach the exit.
+- Complete Level 6: Play Again starts a new run at Level 1.
 - Select any level from the right-side panel: a fresh attempt starts at that level.
 - In Levels 1, 2, and 4, after taking a key, the enemies chase the player.
 - Enemy contact: Lives 2, respawn at the start, score and key retained.

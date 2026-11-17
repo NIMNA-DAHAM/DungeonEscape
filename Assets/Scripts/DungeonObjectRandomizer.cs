@@ -14,7 +14,7 @@ public static class DungeonObjectRandomizer
 
     public static void RandomizePositions(int level)
     {
-        int requiredEnemyCount = level == 2 || level >= 4 ? 2 : 1;
+        int requiredEnemyCount = level == 2 || (level >= 4 && level <= 5) ? 2 : 1;
         int requiredKeyCount = level >= 3 ? 2 : 1;
         int requiredExtraLifeCount = level == 3 ? 2 : 1;
         bool bonusLife = level >= 4;
@@ -38,7 +38,7 @@ public static class DungeonObjectRandomizer
             return;
         }
 
-        if (!ConfigureMazeWalls(walls, level))
+        if (!ConfigureLevelWalls(walls, level))
         {
             return;
         }
@@ -53,6 +53,12 @@ public static class DungeonObjectRandomizer
         if (level == 5)
         {
             RandomizeMazePositions(players[0], keys, exits[0], enemies, extraLives);
+            return;
+        }
+
+        if (level == 6)
+        {
+            RandomizeLevelSixPositions(players[0], keys, exits[0], enemies, extraLives);
             return;
         }
 
@@ -214,7 +220,7 @@ public static class DungeonObjectRandomizer
         Physics2D.SyncTransforms();
     }
 
-    private static bool ConfigureMazeWalls(GameObject walls, int level)
+    private static bool ConfigureLevelWalls(GameObject walls, int level)
     {
         Transform maze = walls.transform.Find("MazeWalls");
         if (maze == null && level == 5)
@@ -245,7 +251,106 @@ public static class DungeonObjectRandomizer
             maze.gameObject.SetActive(level == 5);
         }
 
+        Transform levelSix = walls.transform.Find("LevelSixLayout");
+        if (levelSix == null && level == 6)
+        {
+            Transform template = walls.transform.Find("WallTop");
+            if (template == null)
+            {
+                Debug.LogError("[DungeonEscape] Level 6 requires a WallTop object to create its gates.");
+                return false;
+            }
+
+            levelSix = CreateLevelSixLayout(template, walls.transform);
+        }
+
+        if (levelSix != null)
+        {
+            levelSix.gameObject.SetActive(level == 6);
+        }
+
         return true;
+    }
+
+    private static Transform CreateLevelSixLayout(Transform template, Transform parent)
+    {
+        GameObject layoutObject = new GameObject("LevelSixLayout");
+        layoutObject.transform.SetParent(parent, false);
+        Transform layout = layoutObject.transform;
+
+        CreateMazeWall(template, layout, "GateOneWestWall",
+            new Vector2(-4.65f, -1.3f), new Vector2(2.7f, 0.35f));
+        CreateMazeWall(template, layout, "GateOneEastWall",
+            new Vector2(2.55f, -1.3f), new Vector2(6.9f, 0.35f));
+        CreateMazeWall(template, layout, "GateTwoWestWall",
+            new Vector2(-2.55f, 1.3f), new Vector2(6.9f, 0.35f));
+        CreateMazeWall(template, layout, "GateTwoEastWall",
+            new Vector2(4.65f, 1.3f), new Vector2(2.7f, 0.35f));
+
+        CreateMovingGate(template, layout, "MovingGateOne", new Vector2(-2.1f, -1.3f));
+        CreateMovingGate(template, layout, "MovingGateTwo", new Vector2(2.1f, 1.3f));
+        return layout;
+    }
+
+    private static void CreateMovingGate(Transform template, Transform parent, string gateName, Vector2 position)
+    {
+        GameObject gate = new GameObject(gateName);
+        gate.transform.SetParent(parent, false);
+        gate.transform.position = new Vector3(position.x, position.y, template.position.z);
+        gate.transform.localScale = new Vector3(2f, 0.35f, template.localScale.z);
+
+        SpriteRenderer templateRenderer = template.GetComponent<SpriteRenderer>();
+        SpriteRenderer renderer = gate.AddComponent<SpriteRenderer>();
+        renderer.sprite = templateRenderer.sprite;
+        renderer.color = new Color(0.35f, 0.85f, 1f, 1f);
+        renderer.sortingOrder = templateRenderer.sortingOrder + 1;
+
+        Rigidbody2D body = gate.AddComponent<Rigidbody2D>();
+        body.bodyType = RigidbodyType2D.Kinematic;
+        body.gravityScale = 0f;
+        body.freezeRotation = true;
+        body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        gate.AddComponent<BoxCollider2D>();
+        MovingPathBlock movingBlock = gate.AddComponent<MovingPathBlock>();
+        movingBlock.Configure(position, 2f, 1.5f, position.x < 0f ? 0f : 0.5f);
+    }
+
+    private static void RandomizeLevelSixPositions(PlayerMovement player, KeyCollect[] keys,
+        ExitDoor exit, EnemyMovement[] enemies, ExtraLifePickup[] extraLives)
+    {
+        CoinCollect[] coins = UnityEngine.Object.FindObjectsByType<CoinCollect>();
+        TreasureChestCollect[] chests = UnityEngine.Object.FindObjectsByType<TreasureChestCollect>();
+        TimePickup[] timePickups = UnityEngine.Object.FindObjectsByType<TimePickup>();
+        Array.Sort(keys, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(coins, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(chests, (first, second) => string.CompareOrdinal(first.name, second.name));
+        Array.Sort(timePickups, (first, second) => string.CompareOrdinal(first.name, second.name));
+
+        if (keys.Length < 2 || enemies.Length < 1 || extraLives.Length < 1 ||
+            coins.Length > 5 || chests.Length > 1 || timePickups.Length > 1)
+        {
+            Debug.LogError("[DungeonEscape] Level 6 requires two keys, one enemy, one extra-life pickup, and at most five coins, one chest, and one time pickup.");
+            return;
+        }
+
+        player.SetSpawnPosition(new Vector2(-5f, -4f));
+        SetPosition(keys[0].transform, new Vector2Int(-4, 3));
+        SetPosition(keys[1].transform, new Vector2Int(5, 3));
+        SetPosition(exit.transform, new Vector2Int(5, -4));
+        enemies[0].SetPatrolPositions(new Vector2(4f, 2f), new Vector2(4f, 4f));
+        enemies[0].SetMovementSpeedMultiplier(0.5f);
+
+        if (coins.Length > 0) SetPosition(coins[0].transform, new Vector2Int(-5, -2));
+        if (coins.Length > 1) SetPosition(coins[1].transform, new Vector2Int(-4, 0));
+        if (coins.Length > 2) SetPosition(coins[2].transform, new Vector2Int(0, 0));
+        if (coins.Length > 3) SetPosition(coins[3].transform, new Vector2Int(4, 0));
+        if (coins.Length > 4) SetPosition(coins[4].transform, new Vector2Int(-1, 4));
+        if (chests.Length > 0) SetPosition(chests[0].transform, new Vector2Int(-5, 2));
+        if (timePickups.Length > 0) SetPosition(timePickups[0].transform, new Vector2Int(0, -4));
+        SetPosition(extraLives[0].transform, new Vector2Int(0, 4));
+
+        Physics2D.SyncTransforms();
     }
 
     private static void CreateMazeWall(Transform template, Transform parent, string wallName,

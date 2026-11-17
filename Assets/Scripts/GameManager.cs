@@ -9,7 +9,7 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     private const int MaxLives = 10;
-    private const int MaxLevel = 5;
+    private const int MaxLevel = 6;
 
     public static GameManager Instance { get; private set; }
 
@@ -102,7 +102,8 @@ public class GameManager : MonoBehaviour
             currentLevel == 2 ? "LEVEL 2 - Two enemies guard the exit!" :
             currentLevel == 3 ? "LEVEL 3 - Find both keys while an enemy circles the dungeon!" :
             currentLevel == 4 ? "LEVEL 4 - Cross the enemy routes, find both keys, and claim the extra heart!" :
-            "LEVEL 5 - Find both keys in the maze and escape the patrolling enemies!");
+            currentLevel == 5 ? "LEVEL 5 - Find both keys in the maze and escape the patrolling enemies!" :
+            "LEVEL 6 - Time your way past two moving gates and the dungeon guard!");
         CreateLevelSelector();
         SetEndScreenButtonLabel("Restart");
 
@@ -258,9 +259,9 @@ public class GameManager : MonoBehaviour
         EndGame();
         levelCompleted = true;
         bool hasNextLevel = currentLevel < MaxLevel;
-        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All five levels complete!");
+        ShowMessage(hasNextLevel ? "Level " + currentLevel + " complete!" : "All six levels complete!");
         SetEndScreenButtonLabel(hasNextLevel ? "Next Level" : "Play Again");
-        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL FIVE LEVELS COMPLETE!");
+        SetWinPanelMessage(hasNextLevel ? "LEVEL " + currentLevel + " COMPLETE!" : "ALL SIX LEVELS COMPLETE!");
 
         if (UiAnimator.Instance != null)
         {
@@ -362,7 +363,7 @@ public class GameManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(1f, 0.5f);
         panelRect.pivot = new Vector2(1f, 0.5f);
         panelRect.anchoredPosition = new Vector2(-16f, 0f);
-        panelRect.sizeDelta = new Vector2(210f, 400f);
+        panelRect.sizeDelta = new Vector2(210f, 460f);
         panelObject.GetComponent<Image>().color = new Color(0.06f, 0.08f, 0.12f, 0.9f);
 
         TMP_FontAsset font = scoreText != null ? scoreText.font : TMP_Settings.defaultFontAsset;
@@ -380,7 +381,7 @@ public class GameManager : MonoBehaviour
             buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
             buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
             buttonRect.pivot = new Vector2(0.5f, 0.5f);
-            buttonRect.anchoredPosition = new Vector2(0f, 80f - i * 58f);
+            buttonRect.anchoredPosition = new Vector2(0f, 60f - i * 52f);
             buttonRect.sizeDelta = new Vector2(174f, 50f);
 
             Image buttonImage = buttonObject.GetComponent<Image>();
